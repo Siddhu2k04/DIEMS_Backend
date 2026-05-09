@@ -178,8 +178,11 @@ def update_event(event_id):
     db.session.commit()
     
     # Broadcast event update via sockets
-    from ..sockets import broadcast_event_update
-    broadcast_event_update(event_id, {"msg": "Event updated", "event_id": event_id})
+    try:
+        from sockets import broadcast_event_update
+        broadcast_event_update(event_id, {"msg": "Event updated", "event_id": event_id})
+    except Exception as e:
+        print(f"Warning: Failed to broadcast event update: {e}")
     
     return jsonify({"msg": "Event updated successfully"}), 200
 
@@ -193,6 +196,7 @@ def delete_event(event_id):
     if user.role != 'admin' and event.organizer_id != int(current_user_id):
         return jsonify({"msg": "Unauthorized."}), 403
 
+    Registration.query.filter_by(event_id=event_id).delete()
     db.session.delete(event)
     db.session.commit()
     

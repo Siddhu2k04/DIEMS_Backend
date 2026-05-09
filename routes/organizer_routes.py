@@ -22,6 +22,9 @@ def get_organizer_events():
             "title": event.title,
             "status": event.status,
             "date_time": event.date_time.isoformat(),
+            "venue": event.venue,
+            "category": event.category,
+            "registration_limit": event.registration_limit,
             "registration_count": Registration.query.filter_by(event_id=event.id).count()
         })
     return jsonify(result), 200
