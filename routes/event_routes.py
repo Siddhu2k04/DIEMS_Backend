@@ -15,7 +15,7 @@ def build_ticket_qr_data(registration):
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DIEMS Events Ticket #{registration.id}</title>
+<title>DIEMS Events Ticket</title>
 <style>
 body{{margin:0;font-family:Arial,sans-serif;background:#0f0f13;color:#fff;padding:20px}}
 .card{{max-width:520px;margin:auto;background:#181820;border:1px solid #333;border-radius:16px;padding:20px}}
@@ -25,19 +25,10 @@ p{{margin:8px 0;line-height:1.4}}b{{color:#aaa}}.ok{{color:#22c55e;font-weight:7
 </head>
 <body>
 <div class="card">
-<h1>Verified Ticket</h1>
-<p class="ok">Status: {registration.status}</p>
-<p><b>Ticket ID:</b> {registration.id}</p>
-<h2>Student Details</h2>
+<h1>DIEMS Event Ticket</h1>
 <p><b>Name:</b> {user.name}</p>
 <p><b>Email:</b> {user.email}</p>
-<p><b>Department:</b> {user.department or 'N/A'}</p>
-<h2>Event Details</h2>
 <p><b>Event:</b> {event.title}</p>
-<p><b>Date & Time:</b> {event.date_time.isoformat()}</p>
-<p><b>Venue:</b> {event.venue}</p>
-<p><b>Category:</b> {event.category or 'N/A'}</p>
-<p><b>Organizer:</b> {event.organizer.name}</p>
 </div>
 </body>
 </html>"""
