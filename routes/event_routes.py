@@ -4,35 +4,18 @@ from datetime import datetime
 from models import Event, User, Registration
 from extensions import db
 from utils.qr_generator import generate_qr_code
-from urllib.parse import quote
 
 event_bp = Blueprint('event', __name__)
 
 def build_ticket_qr_data(registration):
     user = registration.user
     event = registration.event
-    html = f"""<!doctype html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DIEMS Events Ticket</title>
-<style>
-body{{margin:0;font-family:Arial,sans-serif;background:#0f0f13;color:#fff;padding:20px}}
-.card{{max-width:520px;margin:auto;background:#181820;border:1px solid #333;border-radius:16px;padding:20px}}
-h1{{font-size:24px;margin:0 0 6px}}h2{{font-size:14px;color:#999;text-transform:uppercase;margin:22px 0 10px}}
-p{{margin:8px 0;line-height:1.4}}b{{color:#aaa}}.ok{{color:#22c55e;font-weight:700}}
-</style>
-</head>
-<body>
-<div class="card">
-<h1>DIEMS Event Ticket</h1>
-<p><b>Name:</b> {user.name}</p>
-<p><b>Email:</b> {user.email}</p>
-<p><b>Event:</b> {event.title}</p>
-</div>
-</body>
-</html>"""
-    return f"data:text/html;charset=utf-8,{quote(html)}"
+    return "\n".join([
+        "DIEMS Event Ticket",
+        f"Student Name: {user.name}",
+        f"Student Email: {user.email}",
+        f"Event Name: {event.title}",
+    ])
 
 @event_bp.route('/', methods=['GET'])
 def get_events():
