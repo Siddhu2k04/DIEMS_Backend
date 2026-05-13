@@ -71,3 +71,22 @@ def update_registration_status(reg_id):
         return jsonify({"msg": f"Registration marked as {new_status}"}), 200
     
     return jsonify({"msg": "Invalid status"}), 400
+
+@organizer_bp.route('/registrations/<int:reg_id>/attendance', methods=['PUT'])
+@jwt_required()
+def update_attendance(reg_id):
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    registration = Registration.query.get_or_404(reg_id)
+    event = registration.event
+
+    if user.role != 'admin' and event.organizer_id != int(current_user_id):
+        return jsonify({"msg": "Unauthorized."}), 403
+
+    data = request.get_json() or {}
+    registration.attendance_status = bool(data.get('attendance_status', True))
+    db.session.commit()
+    return jsonify({
+        "msg": "Attendance updated",
+        "attendance_status": registration.attendance_status
+    }), 200

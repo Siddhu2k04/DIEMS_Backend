@@ -47,11 +47,13 @@ def create_app():
     from routes.event_routes import event_bp
     from routes.organizer_routes import organizer_bp
     from routes.admin_routes import admin_bp
+    from routes.notification_routes import notification_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(event_bp, url_prefix='/api/events')
     app.register_blueprint(organizer_bp, url_prefix='/api/organizer')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(notification_bp, url_prefix='/api/notifications')
 
     # Import socket events
     import sockets

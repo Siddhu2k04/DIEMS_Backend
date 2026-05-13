@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: diems-backend
+    runtime: python3
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -k eventlet -w 1 app:app
+    envVars:
+      - key: SECRET_KEY
+        value: your_super_secret_key_here
+      - key: JWT_SECRET_KEY
+        value: your_jwt_secret_key_here
+      - key: DATABASE_URL
+        value: mysql://username:password@host:port/database_name
+      - key: PYTHON_VERSION
+        value: 3.9
