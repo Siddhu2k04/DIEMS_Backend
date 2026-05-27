@@ -33,7 +33,7 @@ deprecation==2.1.0
 Django==5.2.10
 django-cors-headers==4.9.0
 djangorestframework==3.17.1
-dlib-bin @ file:///C:/Users/Admin/Desktop/missing%20person/Missing-Person-Detection-System/core/dlib_bin-19.24.2-cp310-cp310-win_amd64.whl#sha256=1d57fd043d49b55a766cfc5e6857975a58f7a23c2d8d978f231d40c2babc83c5
+dlib==19.24.2
 dnspython==2.8.0
 dotenv==0.9.9
 et_xmlfile==2.0.0
