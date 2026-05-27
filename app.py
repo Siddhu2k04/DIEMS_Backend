@@ -6,6 +6,8 @@ from extensions import db, jwt, socketio
 from flasgger import Swagger
 
 load_dotenv()
+# Ensure root-level .env is loaded when backend runs from the backend folder
+load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env')))
 
 def create_app():
     app = Flask(__name__)
@@ -15,17 +17,17 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev_secret_key')
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt_dev_secret_key')
     
-    # Use MySQL if provided in DATABASE_URL, else fallback to SQLite
+  
     base_dir = os.path.abspath(os.path.dirname(__file__))
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(base_dir, "app.db")}')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Initialize extensions
+  
     db.init_app(app)
     jwt.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*")
     
-    # Initialize Swagger
+    
     swagger_config = {
         "headers": [],
         "specs": [
@@ -42,7 +44,7 @@ def create_app():
     }
     Swagger(app, config=swagger_config)
 
-    # Import and register blueprints
+   
     from routes.auth_routes import auth_bp
     from routes.event_routes import event_bp
     from routes.organizer_routes import organizer_bp
@@ -55,10 +57,10 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
 
-    # Import socket events
+   
     import sockets
 
-    # Create tables
+    
     with app.app_context():
         import models
         db.create_all()

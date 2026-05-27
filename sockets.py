@@ -11,7 +11,7 @@ def handle_disconnect():
 
 @socketio.on('join')
 def on_join(data):
-    # Data can contain user_id to join a personal room for specific notifications
+  
     room = data.get('room')
     if room:
         join_room(room)

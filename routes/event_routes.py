@@ -1,9 +1,14 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
-from models import Event, User, Registration
+from datetime import datetime, timezone
+import os
+import smtplib
+from email.message import EmailMessage
+
+from models import Event, User, Registration, Notification
 from extensions import db
 from utils.qr_generator import generate_qr_code
+from sockets import send_notification
 
 event_bp = Blueprint('event', __name__)
 
@@ -105,6 +110,7 @@ def register_for_event(event_id):
         user_id=current_user_id,
         event_id=event_id,
         status='approved', # Automatically approve for now
+        registered_at=datetime.now(timezone.utc)
     )
     
     db.session.add(registration)
@@ -118,7 +124,69 @@ def register_for_event(event_id):
 
     registration.qr_code = qr_code_path
     db.session.commit()
-    
+    # Create a persistent notification for the user
+    try:
+        note_msg = f"Successfully registered for '{event.title}'. Your ticket is attached."
+        notification = Notification(message=note_msg, type='registration', user_id=current_user_id)
+        db.session.add(notification)
+        db.session.commit()
+
+        # Emit socket notification (non-blocking)
+        try:
+            send_notification(current_user_id, note_msg, 'registration')
+        except Exception as e:
+            print(f"Warning: failed to emit socket notification: {e}")
+    except Exception as e:
+        print(f"Warning: failed to create notification record: {e}")
+
+    # Send confirmation email with QR attachment if SMTP is configured
+    try:
+        EMAIL_SERVER = os.environ.get('EMAIL_SERVER')
+        EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '0') or 0)
+        EMAIL_USERNAME = os.environ.get('EMAIL_USERNAME')
+        EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+        EMAIL_SENDER = os.environ.get('EMAIL_SENDER') or EMAIL_USERNAME
+
+        if EMAIL_SERVER and EMAIL_PORT and EMAIL_USERNAME and EMAIL_PASSWORD:
+            msg = EmailMessage()
+            msg['Subject'] = f"Registration Confirmed: {event.title}"
+            msg['From'] = EMAIL_SENDER
+            msg['To'] = user.email
+            body = f"Hello {user.name},\n\nYou have been successfully registered for '{event.title}'.\n\nEvent details:\nTitle: {event.title}\nDate & Time: {event.date_time.isoformat()}\nVenue: {event.venue}\n\nPlease find your ticket attached (QR code).\n\nRegards,\nDIEMS Events Team"
+            msg.set_content(body)
+
+            if qr_code_path:
+                try:
+                    # Convert web path to filesystem path (remove leading slash)
+                    file_path = qr_code_path.lstrip('/')
+                    with open(file_path, 'rb') as f:
+                        img_data = f.read()
+                    # attach as png
+                    msg.add_attachment(img_data, maintype='image', subtype='png', filename='ticket.png')
+                except Exception as e:
+                    print(f"Warning: failed to attach QR code: {e}")
+
+            try:
+                with smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT, timeout=10) as server:
+                    server.ehlo()
+                    if EMAIL_PORT == 587:
+                        server.starttls()
+                        server.ehlo()
+                    server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+                    server.send_message(msg)
+            except Exception as e:
+                print(f"Warning: failed to send confirmation email: {e}")
+        else:
+            print(
+                "Email not sent: SMTP config incomplete.",
+                f"EMAIL_SERVER={EMAIL_SERVER}",
+                f"EMAIL_PORT={EMAIL_PORT}",
+                f"EMAIL_USERNAME={'set' if EMAIL_USERNAME else 'missing'}",
+                f"EMAIL_PASSWORD={'set' if EMAIL_PASSWORD else 'missing'}"
+            )
+    except Exception as e:
+        print(f"Warning: unexpected error sending email: {e}")
+
     return jsonify({"msg": "Successfully registered", "qr_code": qr_code_path}), 201
 
 @event_bp.route('/registrations/<int:registration_id>/verify', methods=['GET'])

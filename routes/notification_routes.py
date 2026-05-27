@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from flask import Blueprint, jsonify
+# pyrefly: ignore [missing-import]
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Notification, User
 from extensions import db
