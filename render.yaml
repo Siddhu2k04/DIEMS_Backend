@@ -3,7 +3,7 @@ services:
     name: diems-backend
     runtime: python3
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -k eventlet -w 1 app:app
+    startCommand: gunicorn -w 1 app:app
     envVars:
       - key: SECRET_KEY
         value: your_super_secret_key_here
@@ -13,3 +13,13 @@ services:
         value: mysql://username:password@host:port/database_name
       - key: PYTHON_VERSION
         value: 3.9
+      - key: EMAIL_SERVER
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USERNAME
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: EMAIL_SENDER
+        sync: false
