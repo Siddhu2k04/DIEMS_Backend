@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timezone
 import os
 import smtplib
+import socket
 from email.message import EmailMessage
 
 from models import Event, User, Registration, Notification
@@ -161,25 +162,49 @@ def register_for_event(event_id):
                     print(f"Warning: failed to attach QR code: {e}")
 
             try:
-                with smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT, timeout=10) as server:
+                timeout = int(os.environ.get('EMAIL_TIMEOUT', '20') or 20)
+
+                if EMAIL_PORT == 465:
+                    server_context = smtplib.SMTP_SSL(EMAIL_SERVER, EMAIL_PORT, timeout=timeout)
+                else:
+                    server_context = smtplib.SMTP(EMAIL_SERVER, EMAIL_PORT, timeout=timeout)
+
+                with server_context as server:
                     server.ehlo()
                     if EMAIL_PORT == 587:
                         server.starttls()
                         server.ehlo()
                     server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
                     server.send_message(msg)
+                    print(f"Confirmation email sent to {user.email}", flush=True)
+            except (socket.timeout, TimeoutError) as e:
+                print(
+                    "Warning: failed to send confirmation email: SMTP connection timed out. "
+                    "If this is running on a free Render service, outbound SMTP ports 25, 465, "
+                    "and 587 are blocked. Use a paid Render instance or an HTTPS email API provider.",
+                    repr(e),
+                    flush=True
+                )
+            except smtplib.SMTPAuthenticationError as e:
+                print(
+                    "Warning: failed to send confirmation email: SMTP authentication failed. "
+                    "For Gmail, use an App Password and set EMAIL_USERNAME/EMAIL_PASSWORD on Render.",
+                    repr(e),
+                    flush=True
+                )
             except Exception as e:
-                print(f"Warning: failed to send confirmation email: {e}")
+                print(f"Warning: failed to send confirmation email: {repr(e)}", flush=True)
         else:
             print(
                 "Email not sent: SMTP config incomplete.",
                 f"EMAIL_SERVER={EMAIL_SERVER}",
                 f"EMAIL_PORT={EMAIL_PORT}",
                 f"EMAIL_USERNAME={'set' if EMAIL_USERNAME else 'missing'}",
-                f"EMAIL_PASSWORD={'set' if EMAIL_PASSWORD else 'missing'}"
+                f"EMAIL_PASSWORD={'set' if EMAIL_PASSWORD else 'missing'}",
+                flush=True
             )
     except Exception as e:
-        print(f"Warning: unexpected error sending email: {e}")
+        print(f"Warning: unexpected error sending email: {repr(e)}", flush=True)
 
     return jsonify({"msg": "Successfully registered", "qr_code": qr_code_path}), 201
 
