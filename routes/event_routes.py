@@ -8,7 +8,6 @@ from email.message import EmailMessage
 from models import Event, User, Registration, Notification
 from extensions import db
 from utils.qr_generator import generate_qr_code
-from sockets import send_notification
 
 event_bp = Blueprint('event', __name__)
 
@@ -131,11 +130,6 @@ def register_for_event(event_id):
         db.session.add(notification)
         db.session.commit()
 
-        # Emit socket notification (non-blocking)
-        try:
-            send_notification(current_user_id, note_msg, 'registration')
-        except Exception as e:
-            print(f"Warning: failed to emit socket notification: {e}")
     except Exception as e:
         print(f"Warning: failed to create notification record: {e}")
 
@@ -244,13 +238,6 @@ def update_event(event_id):
     if 'status' in data: event.status = data['status']
 
     db.session.commit()
-    
-    # Broadcast event update via sockets
-    try:
-        from sockets import broadcast_event_update
-        broadcast_event_update(event_id, {"msg": "Event updated", "event_id": event_id})
-    except Exception as e:
-        print(f"Warning: Failed to broadcast event update: {e}")
     
     return jsonify({"msg": "Event updated successfully"}), 200
 

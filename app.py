@@ -2,7 +2,7 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
-from extensions import db, jwt, socketio
+from extensions import db, jwt
 from flasgger import Swagger
 
 load_dotenv()
@@ -25,7 +25,6 @@ def create_app():
   
     db.init_app(app)
     jwt.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*")
     
     
     swagger_config = {
@@ -48,17 +47,12 @@ def create_app():
     from routes.auth_routes import auth_bp
     from routes.event_routes import event_bp
     from routes.organizer_routes import organizer_bp
-    from routes.admin_routes import admin_bp
     from routes.notification_routes import notification_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(event_bp, url_prefix='/api/events')
     app.register_blueprint(organizer_bp, url_prefix='/api/organizer')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
-
-   
-    import sockets
 
     
     with app.app_context():
@@ -69,4 +63,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
+    app.run(debug=True, port=5000)
