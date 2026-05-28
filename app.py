@@ -2,31 +2,43 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
-from extensions import db, jwt
 from flasgger import Swagger
 
+from extensions import db, jwt
+
+
+# Load environment variables (SAFE)
 load_dotenv()
-# Ensure root-level .env is loaded when backend runs from the backend folder
-load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env')))
+
 
 def create_app():
     app = Flask(__name__)
+
+    # Enable CORS
     CORS(app, resources={r"/*": {"origins": "*"}})
 
-    # Configuration
+    # =====================
+    # CONFIGURATION
+    # =====================
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev_secret_key')
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt_dev_secret_key')
-    
-  
+
     base_dir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(base_dir, "app.db")}')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+        'DATABASE_URL',
+        f'sqlite:///{os.path.join(base_dir, "app.db")}'
+    )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-  
+    # =====================
+    # INIT EXTENSIONS
+    # =====================
     db.init_app(app)
     jwt.init_app(app)
-    
-    
+
+    # =====================
+    # SWAGGER
+    # =====================
     swagger_config = {
         "headers": [],
         "specs": [
@@ -41,28 +53,37 @@ def create_app():
         "swagger_ui": True,
         "specs_route": "/apidocs/"
     }
+
     Swagger(app, config=swagger_config)
 
-   
+    # =====================
+    # REGISTER BLUEPRINTS
+    # =====================
     from routes.auth_routes import auth_bp
     from routes.event_routes import event_bp
     from routes.organizer_routes import organizer_bp
     from routes.notification_routes import notification_bp
-    
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(event_bp, url_prefix='/api/events')
     app.register_blueprint(organizer_bp, url_prefix='/api/organizer')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
 
-    
+    # =====================
+    # DATABASE INIT
+    # =====================
     with app.app_context():
         import models
         db.create_all()
 
     return app
 
-if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True, port=5000)
 
+# =====================
+# GUNICORN ENTRY POINT
+# =====================
 app = create_app()
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
